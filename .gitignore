@@ -1,0 +1,5 @@
+#Folderr of dependences
+node_modules
+
+# env
+.env
