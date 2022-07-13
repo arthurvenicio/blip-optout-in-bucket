@@ -7,8 +7,6 @@ export const LoadAllOptout = async (req: Request, res: Response) => {
     const result = await GetAllOptOutOnBucketService();
     return res.send(new ResultDto(true, result, null));
   } catch {
-    return res.send({
-      error: "An error occurred",
-    });
+    return res.send(new ResultDto(false, null, ["An error occurred"]));
   }
 };

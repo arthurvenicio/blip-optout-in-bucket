@@ -65,30 +65,63 @@ export const PutOrPostemplatesOnBucketService = async (body: Template[]) => {
 
 export const GetAllOptOutOnBucketService = async () => {
   try {
-    const apiRequest = {
-      method: CommandsContants.METHOD_GET,
-      id: randomUUID(),
-      uri: CommandsContants.BUCKET_OPTOUT_URI,
-    };
-    const { data } = await api.post("/commands", apiRequest);
-    const { OptoutedContacts } = data.resource;
-    let newArray = Array<ArrayOfOptOut>();
+    const TokensBot = process.env.BOT_TOKENS;
+    const TokensBotArray = TokensBot?.split(",");
+    const result: ArrayOfOptOut[] = [];
 
-    const keys = Object.keys(OptoutedContacts);
-    const values = Object.values(OptoutedContacts);
+    if (!TokensBotArray) return;
 
-    for (let i = 0; i < keys.length; i++) {
-      const key = keys[i].split("@")[0];
-      const value: OptoutedAtT = values[i] as any;
+    const t = TokensBotArray.map(async (token) => {
+      const optOuts = await GetOptOutOnBucketService(token);
+      return optOuts;
+    });
 
-      newArray.push({
-        number: key,
-        OptoutedAt: value.OptoutedAt,
-      });
-    }
+    const ArrayOfOptOut = Promise.all(t);
 
-    return newArray;
+    (await ArrayOfOptOut).forEach((x) =>
+      x.forEach((o) => {
+        result.push(o);
+      })
+    );
+
+    return result;
   } catch (err) {
     return err;
   }
+};
+
+export const GetOptOutOnBucketService = async (
+  botToken: string
+): Promise<ArrayOfOptOut[]> => {
+  const apiRequest = {
+    method: CommandsContants.METHOD_GET,
+    id: randomUUID(),
+    uri: CommandsContants.BUCKET_OPTOUT_URI,
+  };
+  const { data } = await api.post("/commands", apiRequest, {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: botToken,
+    },
+  });
+
+  if (!data.resource) return [];
+
+  const { OptoutedContacts } = data.resource;
+  let newArray = Array<ArrayOfOptOut>();
+
+  const keys = Object.keys(OptoutedContacts);
+  const values = Object.values(OptoutedContacts);
+
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i].split("@")[0];
+    const value: OptoutedAtT = values[i] as any;
+    const dateF = new Date(value.OptoutedAt).toLocaleDateString("pt-BR");
+
+    newArray.push({
+      number: key,
+      OptoutedAt: dateF,
+    });
+  }
+  return newArray;
 };
