@@ -6,7 +6,10 @@ import {
   OptoutedAtT,
   Template,
 } from "../types/bucket.types";
-import { api } from "./../config/api";
+import { WriteCsvFile } from "../utils/csv";
+import { SaveCsvFileOnFtp } from "../utils/ftp";
+import { api } from "../config/api";
+import path from "path";
 
 export const GetAllTemplatesOnBucketSerice = async () => {
   try {
@@ -84,6 +87,18 @@ export const GetAllOptOutOnBucketService = async () => {
       })
     );
 
+    const headers = [
+      { id: "number", title: "Number" },
+      { id: "OptoutedAt", title: "OptOut Date" },
+    ];
+
+    await WriteCsvFile(result, "optout.csv", headers);
+
+    const destFolder =
+      "/GM_WAPP_ONSTAR/TAKE_OPTOUT/optout - " +
+      new Date().toISOString() +
+      ".csv";
+    await SaveCsvFileOnFtp("./optout.csv", destFolder);
     return result;
   } catch (err) {
     return err;
